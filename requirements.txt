@@ -5,4 +5,3 @@ yfinance
 fastapi
 uvicorn
 requests
-sqlite3
