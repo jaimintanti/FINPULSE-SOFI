@@ -37,7 +37,7 @@ Analyze stock prices, market capitalization, PE ratios and historical performanc
 # Load Database
 # -------------------------------
 
-API_URL = "http://127.0.0.1:8000/stocks"
+API_URL = "https://finpulse-sofi-omega.vercel.app/stocks"
 
 response = requests.get(API_URL)
 
