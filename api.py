@@ -1,7 +1,30 @@
 from fastapi import FastAPI
-import sqlite3
+import yfinance as yf
 
 app = FastAPI()
+
+companies = [
+    "TCS.NS",
+    "INFY.NS",
+    "RELIANCE.NS",
+    "HDFCBANK.NS",
+    "ICICIBANK.NS",
+    "SBIN.NS",
+    "LT.NS",
+    "ITC.NS",
+    "HINDUNILVR.NS",
+    "BHARTIARTL.NS",
+    "AXISBANK.NS",
+    "KOTAKBANK.NS",
+    "ASIANPAINT.NS",
+    "MARUTI.NS",
+    "SUNPHARMA.NS",
+    "BAJFINANCE.NS",
+    "TITAN.NS",
+    "ULTRACEMCO.NS",
+    "WIPRO.NS",
+    "NTPC.NS"
+]
 
 
 @app.get("/")
@@ -10,69 +33,75 @@ def home():
 
 
 @app.get("/stocks")
-
 def get_stocks():
-
-    connection = sqlite3.connect("stocks.db")
-    cursor = connection.cursor()
-
-    cursor.execute("""
-        SELECT company,
-               symbol,
-               price,
-               market_cap,
-               pe_ratio,
-               eps
-        FROM stocks
-    """)
-
-    rows = cursor.fetchall()
-
-    connection.close()
 
     stocks = []
 
-    for row in rows:
-        stocks.append({
-            "company": row[0],
-            "symbol": row[1],
-            "price": row[2],
-            "market_cap": row[3],
-            "pe_ratio": row[4],
-            "eps": row[5]
-        })
+    for symbol in companies:
+
+        try:
+            stock = yf.Ticker(symbol)
+
+            info = stock.fast_info
+            full_info = stock.info
+
+            price = info.get("lastPrice")
+
+            if price is None:
+                history = stock.history(period="5d")
+                price = float(history["Close"].iloc[-1])
+
+            stocks.append(
+                {
+                    "company": full_info.get("longName", symbol),
+                    "symbol": symbol,
+                    "price": float(price),
+                    "market_cap": full_info.get("marketCap"),
+                    "pe_ratio": full_info.get("trailingPE"),
+                    "eps": full_info.get("trailingEps"),
+                }
+            )
+
+        except Exception:
+            stocks.append(
+                {
+                    "company": symbol,
+                    "symbol": symbol,
+                    "price": None,
+                    "market_cap": None,
+                    "pe_ratio": None,
+                    "eps": None,
+                }
+            )
 
     return stocks
+
 
 @app.get("/stock/{symbol}")
 def get_stock(symbol: str):
 
-    connection = sqlite3.connect("stocks.db")
-    cursor = connection.cursor()
+    try:
 
-    cursor.execute("""
-        SELECT company,
-               symbol,
-               price,
-               market_cap,
-               pe_ratio,
-               eps
-        FROM stocks
-        WHERE symbol = ?
-    """, (symbol,))
+        stock = yf.Ticker(symbol)
 
-    row = cursor.fetchone()
+        info = stock.fast_info
+        full_info = stock.info
 
-    connection.close()
+        price = info.get("lastPrice")
 
-    if row is None:
+        if price is None:
+            history = stock.history(period="5d")
+            price = float(history["Close"].iloc[-1])
+
+        return {
+            "company": full_info.get("longName", symbol),
+            "symbol": symbol,
+            "price": float(price),
+            "market_cap": full_info.get("marketCap"),
+            "pe_ratio": full_info.get("trailingPE"),
+            "eps": full_info.get("trailingEps"),
+        }
+
+    except Exception:
+
         return {"error": "Company not found"}
-
-    return {
-        "company": row[0],
-        "symbol": row[1],
-        "price": row[2],
-        "market_cap": row[3],
-        "pe_ratio": row[4],
-        "eps": row[5]
-    }

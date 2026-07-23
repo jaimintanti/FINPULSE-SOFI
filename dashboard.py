@@ -1,11 +1,11 @@
 import yfinance as yf
 import plotly.graph_objects as go
 import streamlit as st
-import sqlite3
 import pandas as pd
 import plotly.express as px
-import subprocess
-import sys
+import requests
+
+
 
 # -------------------------------
 # Page Configuration
@@ -30,44 +30,18 @@ Analyze stock prices, market capitalization, PE ratios and historical performanc
 """
 )
 
-# -------------------------------
-# Refresh Button
-# -------------------------------
 
-if st.button("🔄 Refresh Live Data"):
 
-    with st.spinner("Fetching latest market data..."):
-
-        result = subprocess.run(
-            [sys.executable, "refresh_data.py"],
-            capture_output=True,
-            text=True
-        )
-
-    if result.returncode == 0:
-
-        st.success("Database Updated Successfully!")
-
-        st.rerun()
-
-    else:
-
-        st.error("Database Update Failed")
-
-        st.code(result.stderr)
 
 # -------------------------------
 # Load Database
 # -------------------------------
 
-connection = sqlite3.connect("stocks.db")
+API_URL = "http://127.0.0.1:8000/stocks"
 
-df = pd.read_sql_query(
-    "SELECT * FROM stocks",
-    connection
-)
+response = requests.get(API_URL)
 
-connection.close()
+df = pd.DataFrame(response.json())
 
 # -------------------------------
 # Sidebar
