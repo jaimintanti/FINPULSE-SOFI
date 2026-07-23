@@ -1,107 +1,109 @@
 from fastapi import FastAPI
-import yfinance as yf
+import sqlite3
 
 app = FastAPI()
 
-companies = [
-    "TCS.NS",
-    "INFY.NS",
-    "RELIANCE.NS",
-    "HDFCBANK.NS",
-    "ICICIBANK.NS",
-    "SBIN.NS",
-    "LT.NS",
-    "ITC.NS",
-    "HINDUNILVR.NS",
-    "BHARTIARTL.NS",
-    "AXISBANK.NS",
-    "KOTAKBANK.NS",
-    "ASIANPAINT.NS",
-    "MARUTI.NS",
-    "SUNPHARMA.NS",
-    "BAJFINANCE.NS",
-    "TITAN.NS",
-    "ULTRACEMCO.NS",
-    "WIPRO.NS",
-    "NTPC.NS"
-]
 
-
+# Endpoint 1: Check API status
 @app.get("/")
 def home():
-    return {"message": "Welcome to FinPulse API!"}
+    return {
+        "message": "Welcome to FinPulse API!"
+    }
 
 
+# Endpoint 2: Get all stocks
 @app.get("/stocks")
 def get_stocks():
 
+    connection = sqlite3.connect("stocks.db")
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT * FROM stocks")
+
+    rows = cursor.fetchall()
+
+    connection.close()
+
     stocks = []
 
-    for symbol in companies:
-
-        try:
-            stock = yf.Ticker(symbol)
-
-            info = stock.fast_info
-            full_info = stock.info
-
-            price = info.get("lastPrice")
-
-            if price is None:
-                history = stock.history(period="5d")
-                price = float(history["Close"].iloc[-1])
-
-            stocks.append(
-                {
-                    "company": full_info.get("longName", symbol),
-                    "symbol": symbol,
-                    "price": float(price),
-                    "market_cap": full_info.get("marketCap"),
-                    "pe_ratio": full_info.get("trailingPE"),
-                    "eps": full_info.get("trailingEps"),
-                }
-            )
-
-        except Exception:
-            stocks.append(
-                {
-                    "company": symbol,
-                    "symbol": symbol,
-                    "price": None,
-                    "market_cap": None,
-                    "pe_ratio": None,
-                    "eps": None,
-                }
-            )
+    for row in rows:
+        stocks.append({
+            "id": row[0],
+            "company": row[1],
+            "symbol": row[2],
+            "price": row[3],
+            "market_cap": row[4],
+            "pe_ratio": row[5]
+        })
 
     return stocks
 
 
-@app.get("/stock/{symbol}")
+
+# Endpoint 3: Get specific stock by symbol
+@app.get("/stocks/{symbol}")
 def get_stock(symbol: str):
 
-    try:
+    connection = sqlite3.connect("stocks.db")
+    cursor = connection.cursor()
 
-        stock = yf.Ticker(symbol)
+    cursor.execute(
+        "SELECT * FROM stocks WHERE symbol=?",
+        (symbol,)
+    )
 
-        info = stock.fast_info
-        full_info = stock.info
+    row = cursor.fetchone()
 
-        price = info.get("lastPrice")
+    connection.close()
 
-        if price is None:
-            history = stock.history(period="5d")
-            price = float(history["Close"].iloc[-1])
+    if row:
 
         return {
-            "company": full_info.get("longName", symbol),
-            "symbol": symbol,
-            "price": float(price),
-            "market_cap": full_info.get("marketCap"),
-            "pe_ratio": full_info.get("trailingPE"),
-            "eps": full_info.get("trailingEps"),
+            "id": row[0],
+            "company": row[1],
+            "symbol": row[2],
+            "price": row[3],
+            "market_cap": row[4],
+            "pe_ratio": row[5]
         }
 
-    except Exception:
+    return {
+        "message": "Stock not found"
+    }
 
-        return {"error": "Company not found"}
+
+
+# Endpoint 4: Get top 5 stocks by price
+@app.get("/top-stocks")
+def get_top_stocks():
+
+    connection = sqlite3.connect("stocks.db")
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT *
+        FROM stocks
+        ORDER BY price DESC
+        LIMIT 5
+        """
+    )
+
+    rows = cursor.fetchall()
+
+    connection.close()
+
+    top_stocks = []
+
+    for row in rows:
+
+        top_stocks.append({
+            "company": row[1],
+            "symbol": row[2],
+            "price": row[3],
+            "market_cap": row[4],
+            "pe_ratio": row[5]
+        })
+
+    return top_stocks
