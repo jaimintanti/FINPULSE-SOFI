@@ -102,11 +102,15 @@ html, body, [class*="css"] {{
 }}
 
 .block-container {{
-    padding-top: 1.6rem;
+    padding-top: 3.5rem;
     padding-bottom: 3rem;
     padding-left: 2.4rem;
     padding-right: 2.4rem;
     max-width: 1400px;
+}}
+
+header[data-testid="stHeader"] {{
+    background: {INK};
 }}
 
 /* ---------- headings ---------- */
@@ -221,17 +225,19 @@ div[data-testid="stMetric"] {{
     box-shadow: 0 8px 24px rgba(0,0,0,0.30);
 }}
 
-div[data-testid="stMetricLabel"] {{
-    font-family: {FONT_BODY};
-    color: {MUTED};
-    font-weight: 500;
+div[data-testid="stMetricLabel"],
+div[data-testid="stMetricLabel"] * {{
+    font-family: {FONT_BODY} !important;
+    color: {MUTED} !important;
+    font-weight: 500 !important;
     letter-spacing: 0.02em;
 }}
 
-div[data-testid="stMetricValue"] {{
-    font-family: {FONT_MONO};
-    color: {GOLD};
-    font-weight: 600;
+div[data-testid="stMetricValue"],
+div[data-testid="stMetricValue"] * {{
+    font-family: {FONT_MONO} !important;
+    color: {GOLD} !important;
+    font-weight: 600 !important;
     font-variant-numeric: tabular-nums;
 }}
 
@@ -901,22 +907,11 @@ if len(compare_companies) >= 2:
 
     fig_market = px.bar(
 
-        comparison_df.sort_values(
-
-            "market_cap",
-
-            ascending=False
-
-        ),
-
-        x="company",
-
-        y="market_cap",
-
-        color="market_cap",
-
-        color_continuous_scale=SCALE_BLUE
-
+        comparison_df,
+    x="company",
+    y="market_cap",
+    color_discrete_sequence=["#10B981"],
+    title="Market Capitalization Comparison"
     )
 
     fig_market.update_traces(marker_line_width=0)
@@ -925,11 +920,11 @@ if len(compare_companies) >= 2:
 
     fig_market.update_layout(
 
-        coloraxis_showscale=False,
-
-        xaxis_title="Company",
-
-        yaxis_title="Market Cap"
+        template="plotly_dark",
+    paper_bgcolor="#0E1117",
+    plot_bgcolor="#0E1117",
+    title_x=0.5,
+    showlegend=False 
 
     )
 
