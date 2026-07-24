@@ -527,7 +527,9 @@ st.plotly_chart(
 # ---------------------------------------------------
 
 fig3 = px.scatter(
-    filtered_df,
+    filtered_df.assign(
+        market_cap=pd.to_numeric(filtered_df["market_cap"], errors="coerce").clip(lower=0).fillna(0)
+    ),
     x="price",
     y="pe_ratio",
     size="market_cap",
@@ -907,11 +909,22 @@ if len(compare_companies) >= 2:
 
     fig_market = px.bar(
 
-        comparison_df,
-    x="company",
-    y="market_cap",
-    color_discrete_sequence=["#10B981"],
-    title="Market Capitalization Comparison"
+        comparison_df.sort_values(
+
+            "market_cap",
+
+            ascending=False
+
+        ),
+
+        x="company",
+
+        y="market_cap",
+
+        color="market_cap",
+
+        color_continuous_scale=SCALE_BLUE
+
     )
 
     fig_market.update_traces(marker_line_width=0)
@@ -920,11 +933,11 @@ if len(compare_companies) >= 2:
 
     fig_market.update_layout(
 
-        template="plotly_dark",
-    paper_bgcolor="#0E1117",
-    plot_bgcolor="#0E1117",
-    title_x=0.5,
-    showlegend=False 
+        coloraxis_showscale=False,
+
+        xaxis_title="Company",
+
+        yaxis_title="Market Cap"
 
     )
 
