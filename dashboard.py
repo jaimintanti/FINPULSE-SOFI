@@ -292,6 +292,57 @@ div[data-testid="stDataFrame"] {{
     color: {GOLD};
 }}
 
+/* ---------- ticker tape ---------- */
+
+.fp-ticker-wrap {{
+    width: 100%;
+    overflow: hidden;
+    background: {SURFACE};
+    border: 1px solid {BORDER};
+    border-radius: 10px;
+    padding: 0.55rem 0;
+    margin-bottom: 1.4rem;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+}}
+
+.fp-ticker-track {{
+    display: inline-flex;
+    white-space: nowrap;
+    animation: fp-scroll 40s linear infinite;
+}}
+
+.fp-ticker-wrap:hover .fp-ticker-track {{
+    animation-play-state: paused;
+}}
+
+@keyframes fp-scroll {{
+    0%   {{ transform: translateX(0); }}
+    100% {{ transform: translateX(-50%); }}
+}}
+
+.fp-ticker-item {{
+    font-family: {FONT_MONO};
+    font-size: 0.86rem;
+    color: {TEXT};
+    padding: 0 1.4rem;
+    border-right: 1px solid {BORDER};
+}}
+
+.fp-ticker-price {{
+    color: {MUTED};
+}}
+
+.fp-ticker-up {{
+    color: {MINT};
+    font-weight: 600;
+}}
+
+.fp-ticker-down {{
+    color: {CORAL};
+    font-weight: 600;
+}}
+
 /* ---------- alert / info box ---------- */
 
 div[data-testid="stAlert"] {{
@@ -303,6 +354,74 @@ div[data-testid="stAlert"] {{
 
 </style>
 """, unsafe_allow_html=True)
+
+# ---------------------------------------------------
+# API
+# ---------------------------------------------------
+
+API_URL = "https://finpulse-sofi-omega.vercel.app/stocks"
+
+response = requests.get(API_URL)
+
+df = pd.DataFrame(response.json())
+
+# ---------------------------------------------------
+# DAILY MOVEMENT (for the ticker tape)
+# ---------------------------------------------------
+# Pulls each company's last two closes so the ticker can show how
+# much the price moved today, up or down. Cached for 5 minutes so
+# it doesn't refetch on every widget interaction.
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_daily_changes(symbols):
+    changes = {}
+    try:
+        hist = yf.download(
+            tickers=symbols,
+            period="5d",
+            interval="1d",
+            group_by="ticker",
+            progress=False,
+            threads=True,
+        )
+        for sym in symbols:
+            try:
+                closes = hist[sym]["Close"].dropna() if len(symbols) > 1 else hist["Close"].dropna()
+                if len(closes) >= 2:
+                    prev, last = closes.iloc[-2], closes.iloc[-1]
+                    changes[sym] = ((last - prev) / prev) * 100
+            except Exception:
+                continue
+    except Exception:
+        pass
+    return changes
+
+daily_changes = get_daily_changes(tuple(df["symbol"].tolist()))
+
+ticker_items = []
+
+for _, row in df.iterrows():
+    pct = daily_changes.get(row["symbol"])
+    if pct is None:
+        continue
+    direction = "fp-ticker-up" if pct >= 0 else "fp-ticker-down"
+    arrow = "▲" if pct >= 0 else "▼"
+    ticker_items.append(
+        f'<span class="fp-ticker-item">{row["company"]} '
+        f'<span class="fp-ticker-price">₹{row["price"]:,.2f}</span> '
+        f'<span class="{direction}">{arrow} {abs(pct):.2f}%</span></span>'
+    )
+
+if ticker_items:
+    ticker_html = "".join(ticker_items)
+    st.markdown(
+        f"""
+        <div class="fp-ticker-wrap">
+            <div class="fp-ticker-track">{ticker_html}{ticker_html}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 # ---------------------------------------------------
 # HERO TITLE
@@ -321,16 +440,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<hr class="fp-rule">', unsafe_allow_html=True)
-
-# ---------------------------------------------------
-# API
-# ---------------------------------------------------
-
-API_URL = "https://finpulse-sofi-omega.vercel.app/stocks"
-
-response = requests.get(API_URL)
-
-df = pd.DataFrame(response.json())
 
 # ---------------------------------------------------
 # SIDEBAR
