@@ -17,56 +17,283 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------
+# DESIGN TOKENS
+# ---------------------------------------------------
+# A trading-terminal inspired palette: deep indigo-navy base,
+# a warm brass/gold accent (ticker, prosperity, BSE bull), a
+# mint for gains and a coral for losses. Numeric data is set
+# in a monospaced face so figures always align, like a real
+# quote board.
+
+INK        = "#080C16"   # page background
+SURFACE    = "#10182A"   # cards / containers
+SURFACE_2  = "#182338"   # hover / raised surface
+BORDER     = "#243252"   # hairlines
+GOLD       = "#D4AF6A"   # primary accent
+GOLD_DIM   = "#8A7142"
+MINT       = "#3ECF8E"   # positive / secondary accent
+CORAL      = "#F2637A"   # negative / tertiary accent
+BLUE       = "#5B8DEF"   # quaternary accent
+LILAC      = "#A78BFA"   # quinary accent
+TEXT       = "#E9ECF4"
+MUTED      = "#8B93AC"
+
+# Ordered discrete sequence used across every multi-series chart
+# so the same company always reads with the same character.
+BRAND_SEQUENCE = [GOLD, MINT, BLUE, LILAC, CORAL, "#7DD3E0", "#C9A87C", "#9FB8E8"]
+
+# Custom sequential scales (dark surface -> accent) replace the
+# generic Plotly Blues / Greens / Viridis defaults.
+SCALE_GOLD = [[0, SURFACE_2], [1, GOLD]]
+SCALE_MINT = [[0, SURFACE_2], [1, MINT]]
+SCALE_BLUE = [[0, SURFACE_2], [1, BLUE]]
+
+FONT_BODY = "Inter, -apple-system, sans-serif"
+FONT_MONO = "'IBM Plex Mono', 'Courier New', monospace"
+
+CHART_LAYOUT = dict(
+    paper_bgcolor=INK,
+    plot_bgcolor=INK,
+    font=dict(family=FONT_BODY, color=TEXT, size=13),
+    title_font=dict(family=FONT_BODY, color=TEXT, size=19),
+    legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(color=MUTED)),
+    hoverlabel=dict(bgcolor=SURFACE_2, font=dict(family=FONT_MONO, color=TEXT), bordercolor=BORDER),
+    margin=dict(l=40, r=30, t=70, b=40),
+)
+
+AXIS_STYLE = dict(
+    gridcolor=BORDER,
+    zerolinecolor=BORDER,
+    linecolor=BORDER,
+    tickfont=dict(family=FONT_MONO, color=MUTED, size=12),
+    title_font=dict(family=FONT_BODY, color=MUTED, size=13),
+)
+
+
+def style_fig(fig, height=520):
+    """Apply the shared FinPulse chart theme without touching any data/logic."""
+    fig.update_layout(
+        template="plotly_dark",
+        height=height,
+        title_x=0.03,
+        title_xanchor="left",
+        **CHART_LAYOUT,
+    )
+    fig.update_xaxes(**AXIS_STYLE)
+    fig.update_yaxes(**AXIS_STYLE)
+    return fig
+
+
+# ---------------------------------------------------
 # CUSTOM CSS
 # ---------------------------------------------------
 
-st.markdown("""
+st.markdown(f"""
 <style>
 
-.main{
-    background-color:#0E1117;
-}
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
-.block-container{
-    padding-top:2rem;
-    padding-bottom:2rem;
-    padding-left:2rem;
-    padding-right:2rem;
-}
+html, body, [class*="css"] {{
+    font-family: {FONT_BODY};
+}}
 
-h1{
-    color:#4F9DFF;
-    font-weight:700;
-}
+.stApp {{
+    background: {INK};
+}}
 
-h2,h3{
-    color:white;
-}
+.block-container {{
+    padding-top: 1.6rem;
+    padding-bottom: 3rem;
+    padding-left: 2.4rem;
+    padding-right: 2.4rem;
+    max-width: 1400px;
+}}
 
-section[data-testid="stSidebar"]{
-    background-color:#161B22;
-}
+/* ---------- headings ---------- */
 
-div[data-testid="metric-container"]{
-    background:#1B2430;
-    border:1px solid #2D3748;
-    border-radius:15px;
-    padding:18px;
-    box-shadow:0px 5px 18px rgba(0,0,0,0.35);
-}
+h1 {{
+    font-family: 'Space Grotesk', {FONT_BODY};
+    color: {TEXT};
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}}
 
-.stButton>button{
-    width:100%;
-    border-radius:10px;
-    background:#2563EB;
-    color:white;
-    font-weight:bold;
-}
+h2, h3 {{
+    font-family: 'Space Grotesk', {FONT_BODY};
+    color: {TEXT};
+    font-weight: 600;
+}}
 
-.stDownloadButton>button{
-    width:100%;
-    border-radius:10px;
-}
+h4, h5, p, span, label {{
+    color: {MUTED};
+}}
+
+/* ---------- hero header ---------- */
+
+.fp-hero {{
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.2rem;
+}}
+
+.fp-pulse {{
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: {MINT};
+    box-shadow: 0 0 0 0 rgba(62, 207, 142, 0.6);
+    animation: fp-ping 2.2s infinite;
+    flex-shrink: 0;
+}}
+
+@keyframes fp-ping {{
+    0%   {{ box-shadow: 0 0 0 0 rgba(62, 207, 142, 0.55); }}
+    70%  {{ box-shadow: 0 0 0 9px rgba(62, 207, 142, 0); }}
+    100% {{ box-shadow: 0 0 0 0 rgba(62, 207, 142, 0); }}
+}}
+
+.fp-title {{
+    font-family: 'Space Grotesk', {FONT_BODY};
+    font-size: 2.1rem;
+    font-weight: 700;
+    color: {TEXT};
+    letter-spacing: -0.02em;
+}}
+
+.fp-title span {{
+    color: {GOLD};
+}}
+
+.fp-subtitle {{
+    font-family: {FONT_BODY};
+    color: {MUTED};
+    font-size: 1.02rem;
+    max-width: 640px;
+    line-height: 1.55;
+    margin-top: 0.35rem;
+}}
+
+.fp-rule {{
+    height: 1px;
+    background: linear-gradient(90deg, {GOLD} 0%, {BORDER} 40%, transparent 100%);
+    margin: 1.4rem 0 1.6rem 0;
+    border: none;
+}}
+
+/* ---------- sidebar ---------- */
+
+section[data-testid="stSidebar"] {{
+    background-color: {SURFACE};
+    border-right: 1px solid {BORDER};
+}}
+
+section[data-testid="stSidebar"] .stMarkdown h1,
+section[data-testid="stSidebar"] .stMarkdown h2,
+section[data-testid="stSidebar"] .stMarkdown h3 {{
+    font-family: 'Space Grotesk', {FONT_BODY};
+    color: {TEXT};
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
+}}
+
+section[data-testid="stSidebar"] hr {{
+    border-color: {BORDER};
+}}
+
+/* ---------- inputs ---------- */
+
+div[data-baseweb="select"] > div,
+.stMultiSelect > div > div {{
+    background-color: {SURFACE_2} !important;
+    border-radius: 10px !important;
+    border: 1px solid {BORDER} !important;
+    color: {TEXT} !important;
+}}
+
+/* ---------- metric cards ---------- */
+
+div[data-testid="stMetric"] {{
+    background: linear-gradient(160deg, {SURFACE} 0%, {SURFACE_2} 100%);
+    border: 1px solid {BORDER};
+    border-radius: 14px;
+    padding: 1.1rem 1.3rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.30);
+}}
+
+div[data-testid="stMetricLabel"] {{
+    font-family: {FONT_BODY};
+    color: {MUTED};
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}}
+
+div[data-testid="stMetricValue"] {{
+    font-family: {FONT_MONO};
+    color: {GOLD};
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}}
+
+/* ---------- section headers ---------- */
+
+.fp-section-eyebrow {{
+    font-family: {FONT_MONO};
+    font-size: 0.78rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: {GOLD_DIM};
+    margin-bottom: -0.4rem;
+}}
+
+/* ---------- dataframe ---------- */
+
+div[data-testid="stDataFrame"] {{
+    border: 1px solid {BORDER};
+    border-radius: 12px;
+    overflow: hidden;
+}}
+
+/* ---------- buttons ---------- */
+
+.stButton>button {{
+    width: 100%;
+    border-radius: 10px;
+    background: linear-gradient(160deg, {GOLD} 0%, {GOLD_DIM} 100%);
+    color: {INK};
+    font-weight: 600;
+    border: none;
+    font-family: {FONT_BODY};
+    transition: filter 0.15s ease;
+}}
+
+.stButton>button:hover {{
+    filter: brightness(1.08);
+}}
+
+.stDownloadButton>button {{
+    width: 100%;
+    border-radius: 10px;
+    background: {SURFACE_2};
+    color: {TEXT};
+    border: 1px solid {BORDER};
+    font-family: {FONT_BODY};
+    font-weight: 500;
+}}
+
+.stDownloadButton>button:hover {{
+    border-color: {GOLD_DIM};
+    color: {GOLD};
+}}
+
+/* ---------- alert / info box ---------- */
+
+div[data-testid="stAlert"] {{
+    background-color: {SURFACE};
+    border: 1px solid {BORDER};
+    border-radius: 12px;
+    color: {MUTED};
+}}
 
 </style>
 """, unsafe_allow_html=True)
@@ -75,17 +302,19 @@ div[data-testid="metric-container"]{
 # HERO TITLE
 # ---------------------------------------------------
 
-st.title("📈 FinPulse")
-
 st.markdown("""
-###  Indian Stock Market Analytics Dashboard
+<div class="fp-hero">
+    <div class="fp-pulse"></div>
+    <div class="fp-title">Fin<span>Pulse</span></div>
+</div>
+<div class="fp-subtitle">
+    Indian Stock Market Analytics — track live prices, compare fundamentals
+    across leading Indian companies, and follow historical trends in one
+    interactive terminal.
+</div>
+""", unsafe_allow_html=True)
 
-Track stock prices, analyze company fundamentals,
-compare leading Indian companies and visualize
-historical trends in one interactive dashboard.
-""")
-
-st.divider()
+st.markdown('<hr class="fp-rule">', unsafe_allow_html=True)
 
 # ---------------------------------------------------
 # API
@@ -101,7 +330,7 @@ df = pd.DataFrame(response.json())
 # SIDEBAR
 # ---------------------------------------------------
 
-st.sidebar.title("⚙ Dashboard Controls")
+st.sidebar.markdown("### ⚙ Dashboard Controls")
 
 st.sidebar.markdown("---")
 
@@ -117,7 +346,7 @@ period = st.sidebar.selectbox(
 
 st.sidebar.markdown("---")
 
-st.sidebar.subheader("📊 Compare Companies")
+st.sidebar.markdown("#### 📊 Compare Companies")
 
 compare_companies = st.sidebar.multiselect(
     "Select Companies",
@@ -189,12 +418,13 @@ col3.metric(
     f"{filtered_df['pe_ratio'].mean():.2f}"
 )
 
-st.divider()
+st.markdown('<hr class="fp-rule">', unsafe_allow_html=True)
 
 # ---------------------------------------------------
 # TABLE
 # ---------------------------------------------------
 
+st.markdown('<div class="fp-section-eyebrow">Fundamentals</div>', unsafe_allow_html=True)
 st.subheader("📋 Company Fundamentals")
 
 display_df = filtered_df.copy()
@@ -213,12 +443,13 @@ st.dataframe(
     hide_index=True
 )
 
-st.divider()
+st.markdown('<hr class="fp-rule">', unsafe_allow_html=True)
 
 # ---------------------------------------------------
 # VISUAL ANALYTICS
 # ---------------------------------------------------
 
+st.markdown('<div class="fp-section-eyebrow">Analytics</div>', unsafe_allow_html=True)
 st.header("📊 Visual Analytics")
 
 # ---------------------------------------------------
@@ -230,18 +461,14 @@ fig1 = px.bar(
     x="company",
     y="price",
     color="price",
-    color_continuous_scale="Blues",
+    color_continuous_scale=SCALE_GOLD,
     text_auto=".2f",
     title="Current Stock Prices"
 )
 
+style_fig(fig1, height=520)
+
 fig1.update_layout(
-    template="plotly_dark",
-    paper_bgcolor="#0E1117",
-    plot_bgcolor="#0E1117",
-    title_x=0.5,
-    height=520,
-    font=dict(size=15),
     coloraxis_showscale=False,
     xaxis_title="Company",
     yaxis_title="Share Price (₹)"
@@ -249,6 +476,7 @@ fig1.update_layout(
 
 fig1.update_traces(
     textposition="outside",
+    textfont=dict(family=FONT_MONO, color=TEXT, size=12),
     marker_line_width=0
 )
 
@@ -269,20 +497,19 @@ fig2 = px.bar(
     x="company",
     y="market_cap",
     color="market_cap",
-    color_continuous_scale="Greens",
+    color_continuous_scale=SCALE_MINT,
     title="Market Capitalization"
 )
 
+style_fig(fig2, height=520)
+
 fig2.update_layout(
-    template="plotly_dark",
-    paper_bgcolor="#0E1117",
-    plot_bgcolor="#0E1117",
-    title_x=0.5,
-    height=520,
     coloraxis_showscale=False,
     xaxis_title="Company",
     yaxis_title="Market Cap"
 )
+
+fig2.update_traces(marker_line_width=0)
 
 st.plotly_chart(
     fig2,
@@ -301,15 +528,13 @@ fig3 = px.scatter(
     color="company",
     hover_name="company",
     size_max=45,
+    color_discrete_sequence=BRAND_SEQUENCE,
     title="Price vs PE Ratio"
 )
 
+style_fig(fig3, height=560)
+
 fig3.update_layout(
-    template="plotly_dark",
-    paper_bgcolor="#0E1117",
-    plot_bgcolor="#0E1117",
-    title_x=0.5,
-    height=560,
     legend_title=""
 )
 
@@ -317,8 +542,9 @@ fig3.update_traces(
     marker=dict(
         line=dict(
             width=1,
-            color="white"
-        )
+            color=INK
+        ),
+        opacity=0.9
     )
 )
 
@@ -340,22 +566,21 @@ fig4 = px.pie(
     top10,
     values="market_cap",
     names="company",
-    hole=0.45,
-    color_discrete_sequence=px.colors.qualitative.Set3,
+    hole=0.55,
+    color_discrete_sequence=BRAND_SEQUENCE,
     title="Top Companies by Market Capitalization"
 )
 
 fig4.update_traces(
     textposition="inside",
-    textinfo="percent+label"
+    textinfo="percent+label",
+    textfont=dict(family=FONT_BODY, size=12, color=INK),
+    marker=dict(line=dict(color=INK, width=2))
 )
 
+style_fig(fig4, height=650)
+
 fig4.update_layout(
-    template="plotly_dark",
-    paper_bgcolor="#0E1117",
-    plot_bgcolor="#0E1117",
-    title_x=0.5,
-    height=650,
     legend_title=""
 )
 
@@ -367,8 +592,9 @@ st.plotly_chart(
 
 if company != "All Companies":
 
-    st.divider()
+    st.markdown('<hr class="fp-rule">', unsafe_allow_html=True)
 
+    st.markdown('<div class="fp-section-eyebrow">Historical</div>', unsafe_allow_html=True)
     st.header("📈 Historical Stock Analysis")
 
     symbol = filtered_df.iloc[0]["symbol"]
@@ -380,7 +606,7 @@ if company != "All Companies":
     st.subheader(f"{company} ({period})")
 
     # Line Chart
-    st.line_chart(history["Close"])
+    st.line_chart(history["Close"], color=GOLD)
 
     # Candlestick Chart
     fig = go.Figure()
@@ -392,20 +618,19 @@ if company != "All Companies":
             high=history["High"],
             low=history["Low"],
             close=history["Close"],
-            name="Candlestick"
+            name="Candlestick",
+            increasing=dict(line=dict(color=MINT), fillcolor=MINT),
+            decreasing=dict(line=dict(color=CORAL), fillcolor=CORAL),
         )
     )
 
+    style_fig(fig, height=650)
+
     fig.update_layout(
-        template="plotly_dark",
-    title="Candlestick Analysis",
-    title_x=0.5,
-    height=650,
-    xaxis_title="Date",
-    yaxis_title="Price (₹)",
-    xaxis_rangeslider_visible=False,
-    font=dict(size=14),
-    margin=dict(l=20, r=20, t=60, b=20)
+        title="Candlestick Analysis",
+        xaxis_title="Date",
+        yaxis_title="Price (₹)",
+        xaxis_rangeslider_visible=False,
     )
 
     st.plotly_chart(fig, use_container_width=True)
@@ -423,7 +648,8 @@ if company != "All Companies":
         x=history.index,
         y=history["Close"],
         mode="lines",
-        name="Close Price"
+        name="Close Price",
+        line=dict(color=TEXT, width=1.6)
     )
 )
 
@@ -432,7 +658,8 @@ if company != "All Companies":
         x=history.index,
         y=history["20 MA"],
         mode="lines",
-        name="20-Day MA"
+        name="20-Day MA",
+        line=dict(color=GOLD, width=1.8)
     )
 )
 
@@ -441,26 +668,18 @@ if company != "All Companies":
         x=history.index,
         y=history["50 MA"],
         mode="lines",
-        name="50-Day MA"
+        name="50-Day MA",
+        line=dict(color=BLUE, width=1.8)
     )
 )
 
+    style_fig(ma_fig, height=600)
+
     ma_fig.update_layout(
-    template="plotly_dark",
-    title={
-        "text": "Moving Average Analysis",
-        "x": 0.5
-    },
+    title="Moving Average Analysis",
     xaxis_title="Date",
     yaxis_title="Price (₹)",
-    height=600,
     hovermode="x unified",
-    margin=dict(
-        l=30,
-        r=30,
-        t=60,
-        b=30
-    )
 )
 
     st.plotly_chart(ma_fig, use_container_width=True)
@@ -482,8 +701,9 @@ if len(compare_companies) >= 2:
         df["company"].isin(compare_companies)
     ]
 
-    st.divider()
+    st.markdown('<hr class="fp-rule">', unsafe_allow_html=True)
 
+    st.markdown('<div class="fp-section-eyebrow">Comparison</div>', unsafe_allow_html=True)
     st.header("🏆 Company Comparison Dashboard")
 
     st.markdown(
@@ -544,7 +764,7 @@ if len(compare_companies) >= 2:
 
         text="price",
 
-        color_discrete_sequence=px.colors.qualitative.Bold,
+        color_discrete_sequence=BRAND_SEQUENCE,
 
         title="Current Share Price Comparison"
 
@@ -552,21 +772,15 @@ if len(compare_companies) >= 2:
 
     fig_compare.update_traces(
 
-        textposition="outside"
+        textposition="outside",
+        textfont=dict(family=FONT_MONO, color=TEXT, size=12),
+        marker_line_width=0
 
     )
 
+    style_fig(fig_compare, height=520)
+
     fig_compare.update_layout(
-
-        template="plotly_dark",
-
-        paper_bgcolor="#0E1117",
-
-        plot_bgcolor="#0E1117",
-
-        title_x=0.5,
-
-        height=520,
 
         showlegend=False
 
@@ -606,25 +820,23 @@ if len(compare_companies) >= 2:
 
         history_df,
 
-        title="Historical Closing Price Comparison"
+        title="Historical Closing Price Comparison",
+
+        color_discrete_sequence=BRAND_SEQUENCE
 
     )
 
+    line_fig.update_traces(line=dict(width=2))
+
+    style_fig(line_fig, height=600)
+
     line_fig.update_layout(
-
-        template="plotly_dark",
-
-        paper_bgcolor="#0E1117",
-
-        plot_bgcolor="#0E1117",
-
-        title_x=0.5,
-
-        height=600,
 
         xaxis_title="Date",
 
-        yaxis_title="Closing Price"
+        yaxis_title="Closing Price",
+
+        legend_title=""
 
     )
 
@@ -650,23 +862,22 @@ if len(compare_companies) >= 2:
     x="company",
     y="pe_ratio",
     text="pe_ratio",
-    color_discrete_sequence=["#3B82F6"],
+    color_discrete_sequence=[GOLD],
     title="PE Ratio Comparison"
 
     )
 
     fig_pe.update_traces(
 
-        textposition="outside"
+        textposition="outside",
+        textfont=dict(family=FONT_MONO, color=TEXT, size=12),
+        marker_line_width=0
 
     )
 
-    fig_pe.update_layout(
+    style_fig(fig_pe)
 
-        template="plotly_dark",
-    paper_bgcolor="#0E1117",
-    plot_bgcolor="#0E1117",
-    title_x=0.5,
+    fig_pe.update_layout(
     xaxis_title="Company",
     yaxis_title="PE Ratio",
     showlegend=False
@@ -704,21 +915,15 @@ if len(compare_companies) >= 2:
 
         color="market_cap",
 
-        color_continuous_scale="Viridis"
+        color_continuous_scale=SCALE_BLUE
 
     )
 
+    fig_market.update_traces(marker_line_width=0)
+
+    style_fig(fig_market, height=520)
+
     fig_market.update_layout(
-
-        template="plotly_dark",
-
-        paper_bgcolor="#0E1117",
-
-        plot_bgcolor="#0E1117",
-
-        title_x=0.5,
-
-        height=520,
 
         coloraxis_showscale=False,
 
@@ -738,7 +943,7 @@ if len(compare_companies) >= 2:
 
 else:
 
-    st.divider()
+    st.markdown('<hr class="fp-rule">', unsafe_allow_html=True)
 
     st.info(
 
