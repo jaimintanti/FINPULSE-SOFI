@@ -923,7 +923,9 @@ if len(compare_companies) >= 2:
 
         color="market_cap",
 
-        color_continuous_scale=SCALE_BLUE
+        color_continuous_scale=SCALE_BLUE,
+
+        title="Market Capitalization Comparison"
 
     )
 
