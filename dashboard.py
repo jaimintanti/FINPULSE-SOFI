@@ -5,37 +5,91 @@ import pandas as pd
 import plotly.express as px
 import requests
 
-
-
-# -------------------------------
-# Page Configuration
-# -------------------------------
+# ---------------------------------------------------
+# PAGE CONFIG
+# ---------------------------------------------------
 
 st.set_page_config(
     page_title="FinPulse",
-    layout="wide"
+    page_icon="📈",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# -------------------------------
-# Title
-# -------------------------------
+# ---------------------------------------------------
+# CUSTOM CSS
+# ---------------------------------------------------
+
+st.markdown("""
+<style>
+
+.main{
+    background-color:#0E1117;
+}
+
+.block-container{
+    padding-top:2rem;
+    padding-bottom:2rem;
+    padding-left:2rem;
+    padding-right:2rem;
+}
+
+h1{
+    color:#4F9DFF;
+    font-weight:700;
+}
+
+h2,h3{
+    color:white;
+}
+
+section[data-testid="stSidebar"]{
+    background-color:#161B22;
+}
+
+div[data-testid="metric-container"]{
+    background:#1B2430;
+    border:1px solid #2D3748;
+    border-radius:15px;
+    padding:18px;
+    box-shadow:0px 5px 18px rgba(0,0,0,0.35);
+}
+
+.stButton>button{
+    width:100%;
+    border-radius:10px;
+    background:#2563EB;
+    color:white;
+    font-weight:bold;
+}
+
+.stDownloadButton>button{
+    width:100%;
+    border-radius:10px;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+# ---------------------------------------------------
+# HERO TITLE
+# ---------------------------------------------------
 
 st.title("📈 FinPulse")
 
-st.markdown(
-"""
-### Indian Stock Market Analytics Dashboard
+st.markdown("""
+###  Indian Stock Market Analytics Dashboard
 
-Analyze stock prices, market capitalization, PE ratios and historical performance of leading Indian companies.
-"""
-)
+Track stock prices, analyze company fundamentals,
+compare leading Indian companies and visualize
+historical trends in one interactive dashboard.
+""")
 
+st.divider()
 
-
-
-# -------------------------------
-# Load Database
-# -------------------------------
+# ---------------------------------------------------
+# API
+# ---------------------------------------------------
 
 API_URL = "https://finpulse-sofi-omega.vercel.app/stocks"
 
@@ -43,40 +97,37 @@ response = requests.get(API_URL)
 
 df = pd.DataFrame(response.json())
 
-# -------------------------------
-# Sidebar
-# -------------------------------
+# ---------------------------------------------------
+# SIDEBAR
+# ---------------------------------------------------
 
-st.sidebar.header("Filters")
+st.sidebar.title("⚙ Dashboard Controls")
+
+st.sidebar.markdown("---")
 
 company = st.sidebar.selectbox(
-    "Select Company",
-    ["All Companies"] + sorted(df["company"].unique().tolist())
-   
-)
-period = st.sidebar.selectbox(
-    "Historical Period",
-    ["1mo", "6mo", "1y"]
+    "🏢 Select Company",
+    ["All Companies"] + sorted(df["company"].unique())
 )
 
-st.sidebar.subheader("📊 Company Comparison")
+period = st.sidebar.selectbox(
+    "📅 Historical Period",
+    ["1mo","6mo","1y"]
+)
+
+st.sidebar.markdown("---")
+
+st.sidebar.subheader("📊 Compare Companies")
 
 compare_companies = st.sidebar.multiselect(
     "Select Companies",
-    sorted(df["company"].unique().tolist())
+    sorted(df["company"].unique())
 )
-# -------------------------------
-# Search
-# -------------------------------
 
+st.sidebar.markdown("---")
 
-
-# -------------------------------
-# Sorting
-# -------------------------------
-
-sort_option = st.selectbox(
-    "Sort By",
+sort_option = st.sidebar.selectbox(
+    "📈 Sort By",
     [
         "Price",
         "Market Cap",
@@ -84,88 +135,121 @@ sort_option = st.selectbox(
     ]
 )
 
-# -------------------------------
-# Filtering
-# -------------------------------
+# ---------------------------------------------------
+# FILTERING
+# ---------------------------------------------------
 
 filtered_df = df.copy()
 
 if company != "All Companies":
+
     filtered_df = filtered_df[
         filtered_df["company"] == company
     ]
 
-# -------------------------------
-# Sorting Logic
-# -------------------------------
-
 if sort_option == "Price":
+
     filtered_df = filtered_df.sort_values(
         "price",
         ascending=False
     )
 
 elif sort_option == "Market Cap":
+
     filtered_df = filtered_df.sort_values(
         "market_cap",
         ascending=False
     )
 
 else:
+
     filtered_df = filtered_df.sort_values(
         "pe_ratio",
         ascending=False
     )
 
-# -------------------------------
-# KPI Cards
-# -------------------------------
+# ---------------------------------------------------
+# KPI
+# ---------------------------------------------------
 
-st.divider()
-
-col1, col2, col3 = st.columns(3)
+col1,col2,col3 = st.columns(3)
 
 col1.metric(
-    label="📊 Total Companies",
-    value=len(filtered_df)
+    "🏢 Companies Tracked",
+    len(filtered_df)
 )
 
 col2.metric(
-    label="💰 Highest Stock Price",
-    value=f"₹{filtered_df['price'].max():,.2f}"
+    "💹 Highest Share Price",
+    f"₹{filtered_df['price'].max():,.2f}"
 )
 
 col3.metric(
-    label="📈 Average PE Ratio",
-    value=f"{filtered_df['pe_ratio'].mean():.2f}"
+    "📊 Average PE Ratio",
+    f"{filtered_df['pe_ratio'].mean():.2f}"
 )
 
 st.divider()
 
-# -------------------------------
-# Company Table
-# -------------------------------
+# ---------------------------------------------------
+# TABLE
+# ---------------------------------------------------
 
-st.subheader("📋 Stock Data")
+st.subheader("📋 Company Fundamentals")
+
+display_df = filtered_df.copy()
+
+display_df["price"] = display_df["price"].map(lambda x:f"₹{x:,.2f}")
+
+display_df["market_cap"] = display_df["market_cap"].map(lambda x:f"{x:,.0f}")
+
+display_df["pe_ratio"] = display_df["pe_ratio"].map(lambda x:f"{x:.2f}")
+
+display_df["eps"] = display_df["eps"].map(lambda x:f"{x:.2f}")
 
 st.dataframe(
-    filtered_df,
-    use_container_width=True
+    display_df,
+    use_container_width=True,
+    hide_index=True
 )
 
-# -------------------------------
-# Charts
-# -------------------------------
+st.divider()
+
+# ---------------------------------------------------
+# VISUAL ANALYTICS
+# ---------------------------------------------------
 
 st.header("📊 Visual Analytics")
 
-# Price Chart
+# ---------------------------------------------------
+# PRICE CHART
+# ---------------------------------------------------
 
 fig1 = px.bar(
     filtered_df,
     x="company",
     y="price",
+    color="price",
+    color_continuous_scale="Blues",
+    text_auto=".2f",
     title="Current Stock Prices"
+)
+
+fig1.update_layout(
+    template="plotly_dark",
+    paper_bgcolor="#0E1117",
+    plot_bgcolor="#0E1117",
+    title_x=0.5,
+    height=520,
+    font=dict(size=15),
+    coloraxis_showscale=False,
+    xaxis_title="Company",
+    yaxis_title="Share Price (₹)"
+)
+
+fig1.update_traces(
+    textposition="outside",
+    marker_line_width=0
 )
 
 st.plotly_chart(
@@ -173,7 +257,9 @@ st.plotly_chart(
     use_container_width=True
 )
 
-# Market Cap Chart
+# ---------------------------------------------------
+# MARKET CAP
+# ---------------------------------------------------
 
 fig2 = px.bar(
     filtered_df.sort_values(
@@ -182,7 +268,20 @@ fig2 = px.bar(
     ),
     x="company",
     y="market_cap",
+    color="market_cap",
+    color_continuous_scale="Greens",
     title="Market Capitalization"
+)
+
+fig2.update_layout(
+    template="plotly_dark",
+    paper_bgcolor="#0E1117",
+    plot_bgcolor="#0E1117",
+    title_x=0.5,
+    height=520,
+    coloraxis_showscale=False,
+    xaxis_title="Company",
+    yaxis_title="Market Cap"
 )
 
 st.plotly_chart(
@@ -190,15 +289,37 @@ st.plotly_chart(
     use_container_width=True
 )
 
-# Scatter Plot
+# ---------------------------------------------------
+# PRICE VS PE
+# ---------------------------------------------------
 
 fig3 = px.scatter(
     filtered_df,
     x="price",
     y="pe_ratio",
     size="market_cap",
+    color="company",
     hover_name="company",
+    size_max=45,
     title="Price vs PE Ratio"
+)
+
+fig3.update_layout(
+    template="plotly_dark",
+    paper_bgcolor="#0E1117",
+    plot_bgcolor="#0E1117",
+    title_x=0.5,
+    height=560,
+    legend_title=""
+)
+
+fig3.update_traces(
+    marker=dict(
+        line=dict(
+            width=1,
+            color="white"
+        )
+    )
 )
 
 st.plotly_chart(
@@ -206,7 +327,9 @@ st.plotly_chart(
     use_container_width=True
 )
 
-# Pie Chart
+# ---------------------------------------------------
+# PIE CHART
+# ---------------------------------------------------
 
 top10 = filtered_df.sort_values(
     "market_cap",
@@ -217,7 +340,23 @@ fig4 = px.pie(
     top10,
     values="market_cap",
     names="company",
-    title="Top Companies by Market Cap"
+    hole=0.45,
+    color_discrete_sequence=px.colors.qualitative.Set3,
+    title="Top Companies by Market Capitalization"
+)
+
+fig4.update_traces(
+    textposition="inside",
+    textinfo="percent+label"
+)
+
+fig4.update_layout(
+    template="plotly_dark",
+    paper_bgcolor="#0E1117",
+    plot_bgcolor="#0E1117",
+    title_x=0.5,
+    height=650,
+    legend_title=""
 )
 
 st.plotly_chart(
@@ -258,9 +397,15 @@ if company != "All Companies":
     )
 
     fig.update_layout(
-        title="Candlestick Chart",
-        xaxis_title="Date",
-        yaxis_title="Price"
+        template="plotly_dark",
+    title="Candlestick Analysis",
+    title_x=0.5,
+    height=650,
+    xaxis_title="Date",
+    yaxis_title="Price (₹)",
+    xaxis_rangeslider_visible=False,
+    font=dict(size=14),
+    margin=dict(l=20, r=20, t=60, b=20)
     )
 
     st.plotly_chart(fig, use_container_width=True)
@@ -301,9 +446,21 @@ if company != "All Companies":
 )
 
     ma_fig.update_layout(
-    title="Moving Average Analysis",
+    template="plotly_dark",
+    title={
+        "text": "Moving Average Analysis",
+        "x": 0.5
+    },
     xaxis_title="Date",
-    yaxis_title="Price"
+    yaxis_title="Price (₹)",
+    height=600,
+    hovermode="x unified",
+    margin=dict(
+        l=30,
+        r=30,
+        t=60,
+        b=30
+    )
 )
 
     st.plotly_chart(ma_fig, use_container_width=True)
@@ -315,9 +472,9 @@ if company != "All Companies":
     file_name=f"{symbol}_{period}.csv",
     mime="text/csv"
 )
-    # ----------------------------------------------------
-# Company Comparison
-# ----------------------------------------------------
+    # ============================================================
+# COMPANY COMPARISON DASHBOARD
+# ============================================================
 
 if len(compare_companies) >= 2:
 
@@ -327,39 +484,109 @@ if len(compare_companies) >= 2:
 
     st.divider()
 
-    st.header("📊 Company Comparison")
+    st.header("🏆 Company Comparison Dashboard")
 
-    # -----------------------------
-    # Comparison Table
-    # -----------------------------
-
-    st.dataframe(
-        comparison_df,
-        use_container_width=True
+    st.markdown(
+        """
+        Compare valuation, market capitalization,
+        historical performance and pricing across
+        selected companies.
+        """
     )
 
-    # -----------------------------
-    # Price Comparison
-    # -----------------------------
+    # ------------------------------------------------
+
+    # Comparison Table
+
+    # ------------------------------------------------
+
+    display_compare = comparison_df.copy()
+
+    display_compare["price"] = display_compare["price"].map(
+        lambda x:f"₹{x:,.2f}"
+    )
+
+    display_compare["market_cap"] = display_compare["market_cap"].map(
+        lambda x:f"{x:,.0f}"
+    )
+
+    display_compare["pe_ratio"] = display_compare["pe_ratio"].map(
+        lambda x:f"{x:.2f}"
+    )
+
+    display_compare["eps"] = display_compare["eps"].map(
+        lambda x:f"{x:.2f}"
+    )
+
+    st.dataframe(
+        display_compare,
+        use_container_width=True,
+        hide_index=True
+    )
+
+    st.write("")
+
+    # ------------------------------------------------
+
+    # PRICE COMPARISON
+
+    # ------------------------------------------------
 
     fig_compare = px.bar(
+
         comparison_df,
+
         x="company",
+
         y="price",
+
         color="company",
-        title="Stock Price Comparison"
+
+        text="price",
+
+        color_discrete_sequence=px.colors.qualitative.Bold,
+
+        title="Current Share Price Comparison"
+
+    )
+
+    fig_compare.update_traces(
+
+        textposition="outside"
+
+    )
+
+    fig_compare.update_layout(
+
+        template="plotly_dark",
+
+        paper_bgcolor="#0E1117",
+
+        plot_bgcolor="#0E1117",
+
+        title_x=0.5,
+
+        height=520,
+
+        showlegend=False
+
     )
 
     st.plotly_chart(
+
         fig_compare,
+
         use_container_width=True
+
     )
 
-    # -----------------------------
-    # Historical Comparison
-    # -----------------------------
+    # ------------------------------------------------
 
-    st.subheader("📈 Historical Price Comparison")
+    # HISTORICAL PERFORMANCE
+
+    # ------------------------------------------------
+
+    st.subheader("📈 Historical Performance")
 
     history_df = pd.DataFrame()
 
@@ -375,59 +602,160 @@ if len(compare_companies) >= 2:
 
         history_df[company_name] = history["Close"]
 
-    st.line_chart(history_df)
+    line_fig = px.line(
 
-    # -----------------------------
-    # PE Ratio Comparison
-    # -----------------------------
+        history_df,
+
+        title="Historical Closing Price Comparison"
+
+    )
+
+    line_fig.update_layout(
+
+        template="plotly_dark",
+
+        paper_bgcolor="#0E1117",
+
+        plot_bgcolor="#0E1117",
+
+        title_x=0.5,
+
+        height=600,
+
+        xaxis_title="Date",
+
+        yaxis_title="Closing Price"
+
+    )
+
+    st.plotly_chart(
+
+        line_fig,
+
+        use_container_width=True
+
+    )
+
+    # ------------------------------------------------
+
+    # PE RATIO
+
+    # ------------------------------------------------
 
     st.subheader("📊 PE Ratio Comparison")
 
     fig_pe = px.bar(
+
         comparison_df,
+
         x="company",
+
         y="pe_ratio",
+
         color="company",
+
         text="pe_ratio",
-        title="PE Ratio Comparison"
+
+        color_discrete_sequence=px.colors.qualitative.Set2
+
     )
 
     fig_pe.update_traces(
+
         textposition="outside"
+
     )
 
     fig_pe.update_layout(
+
+        template="plotly_dark",
+
+        paper_bgcolor="#0E1117",
+
+        plot_bgcolor="#0E1117",
+
+        title_x=0.5,
+
+        height=500,
+
+        showlegend=False,
+
         xaxis_title="Company",
+
         yaxis_title="PE Ratio"
+
     )
 
     st.plotly_chart(
+
         fig_pe,
+
         use_container_width=True
+
     )
 
-    # -----------------------------
-    # Market Cap Comparison
-    # -----------------------------
+    # ------------------------------------------------
+
+    # MARKET CAP
+
+    # ------------------------------------------------
 
     st.subheader("💰 Market Capitalization Comparison")
 
     fig_market = px.bar(
-        comparison_df,
+
+        comparison_df.sort_values(
+
+            "market_cap",
+
+            ascending=False
+
+        ),
+
         x="company",
+
         y="market_cap",
-        color="company",
-        title="Market Capitalization Comparison"
+
+        color="market_cap",
+
+        color_continuous_scale="Viridis"
+
+    )
+
+    fig_market.update_layout(
+
+        template="plotly_dark",
+
+        paper_bgcolor="#0E1117",
+
+        plot_bgcolor="#0E1117",
+
+        title_x=0.5,
+
+        height=520,
+
+        coloraxis_showscale=False,
+
+        xaxis_title="Company",
+
+        yaxis_title="Market Cap"
+
     )
 
     st.plotly_chart(
+
         fig_market,
+
         use_container_width=True
+
     )
 
 else:
 
     st.divider()
 
-    st.info("👈 Select at least 2 companies from the sidebar to compare.")
-   
+    st.info(
+
+        "👈 Select two or more companies from the sidebar to activate the comparison dashboard."
+
+    )
