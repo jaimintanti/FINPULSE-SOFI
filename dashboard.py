@@ -647,16 +647,11 @@ if len(compare_companies) >= 2:
     fig_pe = px.bar(
 
         comparison_df,
-
-        x="company",
-
-        y="pe_ratio",
-
-        color="company",
-
-        text="pe_ratio",
-
-        color_discrete_sequence=px.colors.qualitative.Set2
+    x="company",
+    y="pe_ratio",
+    text="pe_ratio",
+    color_discrete_sequence=["#3B82F6"],
+    title="PE Ratio Comparison"
 
     )
 
@@ -669,21 +664,12 @@ if len(compare_companies) >= 2:
     fig_pe.update_layout(
 
         template="plotly_dark",
-
-        paper_bgcolor="#0E1117",
-
-        plot_bgcolor="#0E1117",
-
-        title_x=0.5,
-
-        height=500,
-
-        showlegend=False,
-
-        xaxis_title="Company",
-
-        yaxis_title="PE Ratio"
-
+    paper_bgcolor="#0E1117",
+    plot_bgcolor="#0E1117",
+    title_x=0.5,
+    xaxis_title="Company",
+    yaxis_title="PE Ratio",
+    showlegend=False
     )
 
     st.plotly_chart(
