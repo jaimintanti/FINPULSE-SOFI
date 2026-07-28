@@ -98,7 +98,11 @@ html, body, [class*="css"] {{
 }}
 
 .stApp {{
-    background: {INK};
+    background-color: {INK};
+    background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 42px 42px;
 }}
 
 .block-container {{
@@ -136,30 +140,31 @@ h4, h5, p, span, label {{
 
 .fp-hero {{
     display: flex;
-    align-items: center;
-    gap: 0.6rem;
+    align-items: baseline;
+    gap: 0.85rem;
     margin-bottom: 0.2rem;
 }}
 
 .fp-pulse {{
-    width: 10px;
-    height: 10px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
     background: {MINT};
-    box-shadow: 0 0 0 0 rgba(62, 207, 142, 0.6);
-    animation: fp-ping 2.2s infinite;
+    box-shadow: 0 0 0 0 rgba(62, 207, 142, 0.5);
+    animation: fp-ping 2.6s ease-in-out infinite;
     flex-shrink: 0;
+    align-self: center;
 }}
 
 @keyframes fp-ping {{
-    0%   {{ box-shadow: 0 0 0 0 rgba(62, 207, 142, 0.55); }}
-    70%  {{ box-shadow: 0 0 0 9px rgba(62, 207, 142, 0); }}
+    0%   {{ box-shadow: 0 0 0 0 rgba(62, 207, 142, 0.45); }}
+    70%  {{ box-shadow: 0 0 0 6px rgba(62, 207, 142, 0); }}
     100% {{ box-shadow: 0 0 0 0 rgba(62, 207, 142, 0); }}
 }}
 
 .fp-title {{
     font-family: 'Space Grotesk', {FONT_BODY};
-    font-size: 2.1rem;
+    font-size: 1.9rem;
     font-weight: 700;
     color: {TEXT};
     letter-spacing: -0.02em;
@@ -167,6 +172,17 @@ h4, h5, p, span, label {{
 
 .fp-title span {{
     color: {GOLD};
+}}
+
+.fp-tag {{
+    font-family: {FONT_MONO};
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    color: {GOLD_DIM};
+    border: 1px solid {BORDER};
+    border-radius: 3px;
+    padding: 0.15rem 0.45rem;
+    text-transform: uppercase;
 }}
 
 .fp-subtitle {{
@@ -180,9 +196,20 @@ h4, h5, p, span, label {{
 
 .fp-rule {{
     height: 1px;
-    background: linear-gradient(90deg, {GOLD} 0%, {BORDER} 40%, transparent 100%);
+    background: {BORDER};
     margin: 1.4rem 0 1.6rem 0;
     border: none;
+    position: relative;
+}}
+
+.fp-rule::before {{
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 1px;
+    width: 64px;
+    background: {GOLD};
 }}
 
 /* ---------- sidebar ---------- */
@@ -210,7 +237,7 @@ section[data-testid="stSidebar"] hr {{
 div[data-baseweb="select"] > div,
 .stMultiSelect > div > div {{
     background-color: {SURFACE_2} !important;
-    border-radius: 10px !important;
+    border-radius: 6px !important;
     border: 1px solid {BORDER} !important;
     color: {TEXT} !important;
 }}
@@ -218,11 +245,12 @@ div[data-baseweb="select"] > div,
 /* ---------- metric cards ---------- */
 
 div[data-testid="stMetric"] {{
-    background: linear-gradient(160deg, {SURFACE} 0%, {SURFACE_2} 100%);
+    background: {SURFACE};
     border: 1px solid {BORDER};
-    border-radius: 14px;
-    padding: 1.1rem 1.3rem;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.30);
+    border-left: 2px solid {GOLD_DIM};
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.20);
 }}
 
 div[data-testid="stMetricLabel"],
@@ -245,18 +273,20 @@ div[data-testid="stMetricValue"] * {{
 
 .fp-section-eyebrow {{
     font-family: {FONT_MONO};
-    font-size: 0.78rem;
-    letter-spacing: 0.14em;
+    font-size: 0.75rem;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
     color: {GOLD_DIM};
     margin-bottom: -0.4rem;
+    padding-left: 0.6rem;
+    border-left: 2px solid {GOLD_DIM};
 }}
 
 /* ---------- dataframe ---------- */
 
 div[data-testid="stDataFrame"] {{
     border: 1px solid {BORDER};
-    border-radius: 12px;
+    border-radius: 6px;
     overflow: hidden;
 }}
 
@@ -264,11 +294,11 @@ div[data-testid="stDataFrame"] {{
 
 .stButton>button {{
     width: 100%;
-    border-radius: 10px;
-    background: linear-gradient(160deg, {GOLD} 0%, {GOLD_DIM} 100%);
+    border-radius: 6px;
+    background: {GOLD};
     color: {INK};
     font-weight: 600;
-    border: none;
+    border: 1px solid {GOLD};
     font-family: {FONT_BODY};
     transition: filter 0.15s ease;
 }}
@@ -279,7 +309,7 @@ div[data-testid="stDataFrame"] {{
 
 .stDownloadButton>button {{
     width: 100%;
-    border-radius: 10px;
+    border-radius: 6px;
     background: {SURFACE_2};
     color: {TEXT};
     border: 1px solid {BORDER};
@@ -298,8 +328,8 @@ div[data-testid="stDataFrame"] {{
     width: 100%;
     overflow: hidden;
     background: {SURFACE};
-    border: 1px solid {BORDER};
-    border-radius: 10px;
+    border-top: 1px solid {BORDER};
+    border-bottom: 1px solid {BORDER};
     padding: 0.55rem 0;
     margin-bottom: 1.4rem;
     -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
@@ -348,7 +378,7 @@ div[data-testid="stDataFrame"] {{
 div[data-testid="stAlert"] {{
     background-color: {SURFACE};
     border: 1px solid {BORDER};
-    border-radius: 12px;
+    border-radius: 6px;
     color: {MUTED};
 }}
 
@@ -431,6 +461,7 @@ st.markdown("""
 <div class="fp-hero">
     <div class="fp-pulse"></div>
     <div class="fp-title">Fin<span>Pulse</span></div>
+    <div class="fp-tag">NSE · BSE</div>
 </div>
 <div class="fp-subtitle">
     Indian Stock Market Analytics — track live prices, compare fundamentals
