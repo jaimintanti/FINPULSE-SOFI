@@ -399,6 +399,37 @@ response = requests.get(API_URL)
 df = pd.DataFrame(response.json())
 
 # ---------------------------------------------------
+# EXTRA COMPANY: Beta Drugs Limited
+# ---------------------------------------------------
+# Not part of the API response, so its fundamentals are pulled
+# live from yfinance (NSE: BETA) and appended as a normal row —
+# it then flows through every filter, table, and chart exactly
+# like the rest of the companies.
+
+@st.cache_data(ttl=1800, show_spinner=False)
+def get_extra_company_row(symbol, company_name):
+    try:
+        info = yf.Ticker(symbol).get_info()
+        price = info.get("currentPrice") or info.get("regularMarketPrice")
+        if price is None:
+            return None
+        return {
+            "company": company_name,
+            "symbol": symbol,
+            "price": price,
+            "market_cap": info.get("marketCap"),
+            "pe_ratio": info.get("trailingPE"),
+            "eps": info.get("trailingEps"),
+        }
+    except Exception:
+        return None
+
+extra_row = get_extra_company_row("BETA.NS", "Beta Drugs Limited")
+
+if extra_row:
+    df = pd.concat([df, pd.DataFrame([extra_row])], ignore_index=True)
+
+# ---------------------------------------------------
 # DAILY MOVEMENT (for the ticker tape)
 # ---------------------------------------------------
 # Pulls each company's last two closes so the ticker can show how
