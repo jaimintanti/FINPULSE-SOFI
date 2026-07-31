@@ -401,13 +401,36 @@ df = pd.DataFrame(response.json())
 # ---------------------------------------------------
 # EXTRA COMPANY: Beta Drugs Limited
 # ---------------------------------------------------
-# Not part of the API response, so its fundamentals are pulled
-# live from yfinance (NSE: BETA) and appended as a normal row —
-# it then flows through every filter, table, and chart exactly
-# like the rest of the companies.
+# Not part of the main /stocks list, so it's fetched from your
+# own API's per-symbol route first (keeps the exact same field
+# format/units as every other company); if that route doesn't
+# return usable data, it falls back to yfinance (NSE: BETA).
+# Either way it's appended as a normal row and flows through
+# every filter, table, and chart like the rest of the companies.
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def get_extra_company_row(symbol, company_name):
+    try:
+        api_response = requests.get(f"{API_URL}/{symbol}", timeout=8)
+        if api_response.ok:
+            data = api_response.json()
+            if isinstance(data, list) and data:
+                data = data[0]
+            if isinstance(data, dict) and data.get("price") is not None:
+                api_symbol = data.get("symbol", symbol)
+                if not api_symbol.upper().endswith((".NS", ".BO")):
+                    api_symbol = f"{api_symbol}.NS"
+                return {
+                    "company": company_name,
+                    "symbol": api_symbol,
+                    "price": data.get("price"),
+                    "market_cap": data.get("market_cap"),
+                    "pe_ratio": data.get("pe_ratio"),
+                    "eps": data.get("eps"),
+                }
+    except Exception:
+        pass
+
     try:
         info = yf.Ticker(symbol).get_info()
         price = info.get("currentPrice") or info.get("regularMarketPrice")
@@ -424,7 +447,7 @@ def get_extra_company_row(symbol, company_name):
     except Exception:
         return None
 
-extra_row = get_extra_company_row("BETA.NS", "Beta Drugs Limited")
+extra_row = get_extra_company_row("BETA", "Beta Drugs Limited")
 
 if extra_row:
     df = pd.concat([df, pd.DataFrame([extra_row])], ignore_index=True)
