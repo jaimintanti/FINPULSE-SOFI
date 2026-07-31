@@ -49,13 +49,14 @@ SCALE_MINT = [[0, SURFACE_2], [1, MINT]]
 SCALE_BLUE = [[0, SURFACE_2], [1, BLUE]]
 
 FONT_BODY = "Inter, -apple-system, sans-serif"
-FONT_MONO = "'IBM Plex Mono', 'Courier New', monospace"
+FONT_DISPLAY = "'Fraunces', 'Georgia', serif"
+FONT_MONO = "'Spline Sans Mono', 'Consolas', monospace"
 
 CHART_LAYOUT = dict(
     paper_bgcolor=INK,
     plot_bgcolor=INK,
     font=dict(family=FONT_BODY, color=TEXT, size=13),
-    title_font=dict(family=FONT_BODY, color=TEXT, size=19),
+    title_font=dict(family=FONT_DISPLAY, color=TEXT, size=21),
     legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(color=MUTED)),
     hoverlabel=dict(bgcolor=SURFACE_2, font=dict(family=FONT_MONO, color=TEXT), bordercolor=BORDER),
     margin=dict(l=40, r=30, t=70, b=40),
@@ -91,7 +92,7 @@ def style_fig(fig, height=520):
 st.markdown(f"""
 <style>
 
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600&family=Spline+Sans+Mono:wght@400;500;600&display=swap');
 
 html, body, [class*="css"] {{
     font-family: {FONT_BODY};
@@ -120,14 +121,14 @@ header[data-testid="stHeader"] {{
 /* ---------- headings ---------- */
 
 h1 {{
-    font-family: 'Space Grotesk', {FONT_BODY};
+    font-family: {FONT_DISPLAY};
     color: {TEXT};
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: -0.01em;
 }}
 
 h2, h3 {{
-    font-family: 'Space Grotesk', {FONT_BODY};
+    font-family: {FONT_DISPLAY};
     color: {TEXT};
     font-weight: 600;
 }}
@@ -163,15 +164,17 @@ h4, h5, p, span, label {{
 }}
 
 .fp-title {{
-    font-family: 'Space Grotesk', {FONT_BODY};
-    font-size: 1.9rem;
-    font-weight: 700;
+    font-family: {FONT_DISPLAY};
+    font-size: 2.15rem;
+    font-weight: 600;
     color: {TEXT};
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
 }}
 
 .fp-title span {{
     color: {GOLD};
+    font-style: italic;
+    font-weight: 500;
 }}
 
 .fp-tag {{
@@ -222,10 +225,10 @@ section[data-testid="stSidebar"] {{
 section[data-testid="stSidebar"] .stMarkdown h1,
 section[data-testid="stSidebar"] .stMarkdown h2,
 section[data-testid="stSidebar"] .stMarkdown h3 {{
-    font-family: 'Space Grotesk', {FONT_BODY};
+    font-family: {FONT_DISPLAY};
     color: {TEXT};
     font-size: 1.05rem;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
 }}
 
 section[data-testid="stSidebar"] hr {{
@@ -428,6 +431,31 @@ def get_daily_changes(symbols):
 
 daily_changes = get_daily_changes(tuple(df["symbol"].tolist()))
 
+# ---------------------------------------------------
+# BETA (volatility vs. the market)
+# ---------------------------------------------------
+# Beta isn't in the API response, so it's pulled from each ticker's
+# yfinance profile and merged in as its own column, same as the
+# other fundamentals. Cached for 30 minutes since beta barely moves
+# intraday.
+
+@st.cache_data(ttl=1800, show_spinner=False)
+def get_beta_values(symbols):
+    betas = {}
+    for sym in symbols:
+        try:
+            info = yf.Ticker(sym).get_info()
+            beta = info.get("beta")
+            if beta is not None:
+                betas[sym] = beta
+        except Exception:
+            continue
+    return betas
+
+beta_values = get_beta_values(tuple(df["symbol"].tolist()))
+
+df["beta"] = df["symbol"].map(beta_values)
+
 ticker_items = []
 
 for _, row in df.iterrows():
@@ -583,6 +611,8 @@ display_df["pe_ratio"] = display_df["pe_ratio"].map(lambda x:f"{x:.2f}")
 
 display_df["eps"] = display_df["eps"].map(lambda x:f"{x:.2f}")
 
+display_df["beta"] = display_df["beta"].map(lambda x: f"{x:.2f}" if pd.notna(x) else "—")
+
 st.dataframe(
     display_df,
     use_container_width=True,
@@ -737,6 +767,51 @@ st.plotly_chart(
     use_container_width=True
 )
 
+# ---------------------------------------------------
+# BETA
+# ---------------------------------------------------
+
+beta_df = filtered_df.dropna(subset=["beta"])
+
+if not beta_df.empty:
+
+    fig5 = px.bar(
+        beta_df.sort_values("beta", ascending=False),
+        x="company",
+        y="beta",
+        color="beta",
+        color_continuous_scale=SCALE_GOLD,
+        text_auto=".2f",
+        title="Beta (Volatility vs. Market)"
+    )
+
+    style_fig(fig5, height=480)
+
+    fig5.update_layout(
+        coloraxis_showscale=False,
+        xaxis_title="Company",
+        yaxis_title="Beta"
+    )
+
+    fig5.update_traces(
+        textposition="outside",
+        textfont=dict(family=FONT_MONO, color=TEXT, size=12),
+        marker_line_width=0
+    )
+
+    fig5.add_hline(
+        y=1,
+        line_dash="dot",
+        line_color=MUTED,
+        annotation_text="Market (1.0)",
+        annotation_font=dict(family=FONT_MONO, color=MUTED, size=11)
+    )
+
+    st.plotly_chart(
+        fig5,
+        use_container_width=True
+    )
+
 
 if company != "All Companies":
 
@@ -884,6 +959,10 @@ if len(compare_companies) >= 2:
 
     display_compare["eps"] = display_compare["eps"].map(
         lambda x:f"{x:.2f}"
+    )
+
+    display_compare["beta"] = display_compare["beta"].map(
+        lambda x: f"{x:.2f}" if pd.notna(x) else "—"
     )
 
     st.dataframe(
@@ -1038,6 +1117,54 @@ if len(compare_companies) >= 2:
         use_container_width=True
 
     )
+
+    # ------------------------------------------------
+
+    # BETA
+
+    # ------------------------------------------------
+
+    beta_compare_df = comparison_df.dropna(subset=["beta"])
+
+    if not beta_compare_df.empty:
+
+        st.subheader("📐 Beta Comparison")
+
+        fig_beta = px.bar(
+            beta_compare_df,
+            x="company",
+            y="beta",
+            text="beta",
+            color_discrete_sequence=[GOLD],
+            title="Beta Comparison"
+        )
+
+        fig_beta.update_traces(
+            textposition="outside",
+            textfont=dict(family=FONT_MONO, color=TEXT, size=12),
+            marker_line_width=0
+        )
+
+        style_fig(fig_beta)
+
+        fig_beta.update_layout(
+            xaxis_title="Company",
+            yaxis_title="Beta",
+            showlegend=False
+        )
+
+        fig_beta.add_hline(
+            y=1,
+            line_dash="dot",
+            line_color=MUTED,
+            annotation_text="Market (1.0)",
+            annotation_font=dict(family=FONT_MONO, color=MUTED, size=11)
+        )
+
+        st.plotly_chart(
+            fig_beta,
+            use_container_width=True
+        )
 
     # ------------------------------------------------
 
